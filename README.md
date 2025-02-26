@@ -1,6 +1,6 @@
-# WatchWorld
+# Watch
 
-WatchWorld is a modern, immersive video feed app, built with Next.js. The app integrates World ID verification using MiniKit, features a full-screen, snap-scrolling video feed with variable rewards per video, and a profile page that shows user metrics and an interactive earnings graph.
+Watch is a modern, immersive video feed app, built with Next.js inside the world App. The app integrates World ID verification using MiniKit, features a full-screen, snap-scrolling video feed with variable rewards per video, and a profile page that shows user metrics and an interactive earnings graph.
 
 ## Features
 
@@ -82,4 +82,4 @@ Returns a list of claimed rewards/actions for the authenticated user.
 Contributions are welcome. Please fork the repository and submit a pull request with your improvements. For major changes, open an issue first to discuss what you would like to change.
 
 ## License
-© 2025 [Your Name or Your Company]. All Rights Reserved.
+© 2025 Maroua BOUDOUKHA. All Rights Reserved.
