@@ -1,37 +1,85 @@
-# watch-world-app
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# WatchWorld
+
+WatchWorld is a modern, immersive video feed app, built with Next.js. The app integrates World ID verification using MiniKit, features a full-screen, snap-scrolling video feed with variable rewards per video, and a profile page that shows user metrics and an interactive earnings graph.
+
+## Features
+
+- **World ID Verification:**
+  Users must verify their identity with World ID before accessing the video feed.
+
+- **Immersive Video Feed:**
+  Full-screen videos with snap-scrolling behavior. Each video has its own custom reward, which users can claim after watching.
+
+- **Interactive Profile Page:**
+  View your total earnings, videos watched, rewards claimed, and an interactive graph of earnings per video.
+
+- **Modern UI:**
+  Sleek, futuristic design with a gradient background and animated elements.
+
+## Tech Stack
+
+- [Next.js](https://nextjs.org/)
+- [React](https://reactjs.org/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [WorldCoin MiniKit](https://worldcoin.org/) (for World ID integration)
+- [Chart.js](https://www.chartjs.org/) and [react-chartjs-2](https://react-chartjs-2.js.org/) for charts
+- [SQLite](https://www.sqlite.org/index.html) for database storage
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- [Node.js](https://nodejs.org/) (v14 or later recommended)
+- [npm](https://www.npmjs.com/) or [Yarn](https://yarnpkg.com/)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Installation
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. **Clone the Repository:**
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+   ```bash
+   git clone https://github.com/yourusername/watchworld.git
+   cd watchworld
 
-## Learn More
+### Configure Environment
+Update miniKit.config.js with your WorldCoin Developer Portal app ID and other configuration options.
+Ensure your SQLite database (db.sqlite) is present at the specified path in lib/db.ts (or adjust the path as needed).
+Setup Tailwind CSS
+Tailwind CSS is configured in styles/globals.css. Verify that you have the necessary PostCSS configuration if you plan to customize further.
 
-To learn more about Next.js, take a look at the following resources:
+## Running the App
+Start the development server with:
+    ```bash
+    npm run dev
+    or
+    yarn dev
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Open http://localhost:3000 in your browser to view the app.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+## Building for Production
+To build and start the project for production:
+    ```bash
+    npm run build
+    npm start
+    or
+    yarn build
+    yarn start
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## API Endpoints
+/api/verify-signin:
+Verifies World ID and sets a user cookie upon successful sign-in.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+/api/verify-action:
+Processes a video reward claim. Accepts the video ID and a custom reward amount.
+
+/api/get-earnings:
+Retrieves the total earnings for the authenticated user.
+
+/api/get-user-actions:
+Returns a list of claimed rewards/actions for the authenticated user.
+
+## Contributing
+Contributions are welcome. Please fork the repository and submit a pull request with your improvements. For major changes, open an issue first to discuss what you would like to change.
+
+## License
+© 2025 [Your Name or Your Company]. All Rights Reserved.

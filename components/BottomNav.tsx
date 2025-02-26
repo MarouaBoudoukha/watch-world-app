@@ -1,4 +1,5 @@
 // components/BottomNav.tsx
+/*
 import Link from "next/link";
 import { FaHome, FaUserAlt } from "react-icons/fa";
 
@@ -23,6 +24,23 @@ export default function BottomNav() {
       </Link>
       <Link href="/profile" style={{ color: "#0070f3", fontSize: "1.8rem" }}>
         <FaUserAlt />
+      </Link>
+    </nav>
+  );
+}
+*/
+
+import Link from "next/link";
+import { FaHome, FaUserAlt } from "react-icons/fa";
+
+export default function BottomNav() {
+  return (
+    <nav className="absolute bottom-0 left-0 right-0 flex justify-around items-center py-4 bg-transparent z-30">
+      <Link href="/">
+        <FaHome className="text-white text-2xl" />
+      </Link>
+      <Link href="/profile">
+        <FaUserAlt className="text-white text-2xl" />
       </Link>
     </nav>
   );

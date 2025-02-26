@@ -1,4 +1,5 @@
 // pages/index.tsx
+/*
 import { useState, useEffect } from "react";
 import VideoPlayer from "../components/VideoPlayer";
 import BottomNav from "../components/BottomNav";
@@ -96,3 +97,108 @@ export default function Home() {
     </div>
   );
 }
+*/
+import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
+import VideoPlayer from "../components/VideoPlayer";
+import BottomNav from "../components/BottomNav";
+import Cookies from "js-cookie";
+
+// Added a "reward" field for each video.
+const videos = [
+    { id: "1", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4", reward: 0.5 },
+    { id: "2", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4", reward: 1.0 },
+    { id: "3", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4", reward: 0.75 },
+    { id: "4", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4", reward: 0.8 },
+    { id: "5", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4", reward: 1.2 },
+    { id: "6", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4", reward: 0.6 },
+    { id: "7", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4", reward: 1.5 },
+    { id: "8", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4", reward: 0.9 },
+    { id: "9", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4", reward: 1.0 },
+  ];
+
+
+  export default function Home() {
+    const router = useRouter();
+    const [isVerified, setIsVerified] = useState(false);
+    const [completedVideos, setCompletedVideos] = useState<Record<string, boolean>>({});
+    const [totalEarnings, setTotalEarnings] = useState(0);
+
+    useEffect(() => {
+      const uid = Cookies.get("userId");
+      if (!uid) {
+        router.push("/signin");
+      } else {
+        setIsVerified(true);
+        fetch("/api/get-earnings")
+          .then((res) => res.json())
+          .then((data) => setTotalEarnings(data.total));
+      }
+    }, [router]);
+
+    const handleVideoEnded = (videoId: string) => {
+      setCompletedVideos((prev) => ({ ...prev, [videoId]: true }));
+    };
+
+    const handleClaimReward = async (videoId: string) => {
+      // Look up the specific reward amount from our videos array.
+      const video = videos.find((v) => v.id === videoId);
+      const reward = video?.reward || 0.1;
+
+      try {
+        const res = await fetch("/api/verify-action", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            proof: "dummy-proof",
+            action: "watch_video",
+            signal: videoId,
+            reward, // Pass the custom reward amount.
+          }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert(`Reward claimed: ${data.reward} WID`);
+          const earningsRes = await fetch("/api/get-earnings");
+          const earningsData = await earningsRes.json();
+          setTotalEarnings(earningsData.total);
+        } else {
+          alert(`Error: ${data.error}`);
+        }
+      } catch (error) {
+        console.error(error);
+        alert("Error claiming reward.");
+      }
+    };
+
+    if (!isVerified) return null; // Render nothing while redirecting
+
+    return (
+      <div className="relative bg-black overflow-hidden h-screen">
+        <header className="absolute top-0 left-0 right-0 z-10 flex justify-between items-center p-4">
+          <h1 className="text-white text-xl font-bold">WatchWorld</h1>
+          <div className="text-white text-sm">Earnings: {totalEarnings} WID</div>
+        </header>
+
+        <div className="h-full overflow-y-scroll snap-y snap-mandatory">
+          {videos.map((video) => (
+            <div key={video.id} className="snap-start relative">
+              <VideoPlayer src={video.url} onEnded={() => handleVideoEnded(video.id)} />
+              {completedVideos[video.id] && (
+                <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-20">
+                  <button
+                    onClick={() => handleClaimReward(video.id)}
+                    className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 transition py-3 px-10 rounded-full text-lg shadow-xl uppercase tracking-wide"
+                  >
+                    Claim Reward ({video.reward} WID)
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <BottomNav />
+      </div>
+    );
+  }
