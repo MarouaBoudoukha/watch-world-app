@@ -56,6 +56,9 @@ export default function SignIn() {
   );
 }
 */
+
+// pages/signin.tsx
+
 import { useCallback } from "react";
 import { useRouter } from "next/router";
 import { MiniKit, VerificationLevel } from "@worldcoin/minikit-js";

@@ -31,14 +31,21 @@ export default function BottomNav() {
 */
 
 import Link from "next/link";
-import { FaHome, FaUserAlt } from "react-icons/fa";
+import { FaHome, FaUserAlt, FaPlus } from "react-icons/fa";
+import { useUser } from "./UserContext";
 
 export default function BottomNav() {
+  const { role } = useUser();
   return (
     <nav className="absolute bottom-0 left-0 right-0 flex justify-around items-center py-4 bg-transparent z-30">
       <Link href="/">
         <FaHome className="text-white text-2xl" />
       </Link>
+      {role === 'company' && (
+        <Link href="/upload">
+          <FaPlus className="text-white text-2xl" />
+        </Link>
+      )}
       <Link href="/profile">
         <FaUserAlt className="text-white text-2xl" />
       </Link>

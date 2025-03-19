@@ -98,14 +98,18 @@ export default function Home() {
   );
 }
 */
+
+// pages/index.tsx
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import VideoPlayer from "../components/VideoPlayer";
 import BottomNav from "../components/BottomNav";
 import Cookies from "js-cookie";
+import { motion } from "framer-motion";
 
 // Added a "reward" field for each video.
-const videos = [
+/*const videos = [
     { id: "1", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4", reward: 0.5 },
     { id: "2", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4", reward: 1.0 },
     { id: "3", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4", reward: 0.75 },
@@ -116,13 +120,14 @@ const videos = [
     { id: "8", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4", reward: 0.9 },
     { id: "9", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4", reward: 1.0 },
   ];
-
+*/
 
   export default function Home() {
     const router = useRouter();
     const [isVerified, setIsVerified] = useState(false);
     const [completedVideos, setCompletedVideos] = useState<Record<string, boolean>>({});
     const [totalEarnings, setTotalEarnings] = useState(0);
+    const [videos, setVideos] = useState<any[]>([]);
 
     useEffect(() => {
       const uid = Cookies.get("userId");
@@ -133,6 +138,9 @@ const videos = [
         fetch("/api/get-earnings")
           .then((res) => res.json())
           .then((data) => setTotalEarnings(data.total));
+        fetch("/api/recommendations")
+          .then((res) => res.json())
+          .then((data) => setVideos(data.videos || []));
       }
     }, [router]);
 
@@ -143,7 +151,7 @@ const videos = [
     const handleClaimReward = async (videoId: string) => {
       // Look up the specific reward amount from our videos array.
       const video = videos.find((v) => v.id === videoId);
-      const reward = video?.reward || 0.1;
+      const reward = video?.reward || 0.01;
 
       try {
         const res = await fetch("/api/verify-action", {
@@ -177,24 +185,35 @@ const videos = [
       <div className="relative bg-black overflow-hidden h-screen">
         <header className="absolute top-0 left-0 right-0 z-10 flex justify-between items-center p-4">
           <h1 className="text-white text-xl font-bold">WatchWorld</h1>
-          <div className="text-white text-sm">Earnings: {totalEarnings} WID</div>
+          <div className="text-white text-sm">Earnings: {totalEarnings} WLD</div>
         </header>
 
         <div className="h-full overflow-y-scroll snap-y snap-mandatory">
           {videos.map((video) => (
-            <div key={video.id} className="snap-start relative">
+            <motion.div
+              key={video.id}
+              className="snap-start relative"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
+            >
               <VideoPlayer src={video.url} onEnded={() => handleVideoEnded(video.id)} />
               {completedVideos[video.id] && (
-                <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-20">
+                <motion.div
+                  className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-20"
+                  initial={{ y: 100, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ duration: 0.5 }}
+                >
                   <button
                     onClick={() => handleClaimReward(video.id)}
                     className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 transition py-3 px-10 rounded-full text-lg shadow-xl uppercase tracking-wide"
                   >
-                    Claim Reward ({video.reward} WID)
+                    Claim Reward ({video.reward} WLD)
                   </button>
-                </div>
+                </motion.div>
               )}
-            </div>
+            </motion.div>
           ))}
         </div>
 

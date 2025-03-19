@@ -64,11 +64,17 @@ export default function Profile() {
   );
 }
 */
-import { useState, useEffect } from "react";
+
+// pages/profile.tsx
+
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import Cookies from "js-cookie";
 import BottomNav from "../components/BottomNav";
 import { Line } from "react-chartjs-2";
+import { useUser } from "../components/UserContext";
+import gsap from "gsap";
+
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -91,13 +97,27 @@ ChartJS.register(
 );
 
 export default function Profile() {
+  const metricsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (metricsRef.current) {
+      gsap.from(metricsRef.current.children, {
+        opacity: 0,
+        y: 20,
+        stagger: 0.2,
+        duration: 0.5,
+      });
+    }
+  }, []);
   const router = useRouter();
+  const { role } = useUser();
   const userId = Cookies.get("userId");
   const [actions, setActions] = useState<any[]>([]);
   const [totalEarnings, setTotalEarnings] = useState(0);
   const [metrics, setMetrics] = useState({
     videosWatched: 0,
     rewardsClaimed: 0,
+    videosUploaded: 0,
   });
 
   useEffect(() => {
@@ -108,18 +128,21 @@ export default function Profile() {
         .then((res) => res.json())
         .then((data) => {
           setActions(data);
-          const total = data.reduce(
-            (sum: number, action: any) => sum + (action.reward || 0),
-            0
-          );
+          const total = data.reduce((sum: number, action: any) => sum + (action.reward || 0), 0);
           setTotalEarnings(total);
-          setMetrics({
+          setMetrics((prev) => ({
+            ...prev,
             videosWatched: data.length,
-            rewardsClaimed: data.filter((a) => a.reward > 0).length,
-          });
+            rewardsClaimed: data.filter((a: { reward: number; }) => a.reward > 0).length,
+          }));
         });
+      if (role === "company") {
+        fetch("/api/get-company-metrics")
+          .then((res) => res.json())
+          .then((data) => setMetrics((prev) => ({ ...prev, videosUploaded: data.videoCount })));
+      }
     }
-  }, [userId, router]);
+  }, [userId, router, role]);
 
   // Dummy data for graph: earnings over time (or per video)
   // For demo purposes, we use the index as the time axis.
@@ -157,57 +180,68 @@ export default function Profile() {
     );
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white relative pb-16">
-      <header className="py-6 text-center border-b border-gray-700">
-        <h1 className="text-3xl font-bold">Your Profile</h1>
-      </header>
+      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white relative pb-16">
+        <header className="py-6 text-center border-b border-gray-700">
+          <h1 className="text-3xl font-bold">Your Profile</h1>
+        </header>
 
-      <div className="max-w-2xl mx-auto p-6 mt-6 bg-gray-800 rounded-lg shadow-lg">
-        <div className="mb-6 grid grid-cols-2 gap-4">
-          <div className="bg-gray-700 p-4 rounded-md text-center">
-            <p className="text-sm text-gray-400">Total Earnings</p>
-            <p className="text-2xl font-bold">{totalEarnings.toFixed(2)} WID</p>
+        <div className="max-w-2xl mx-auto p-6 mt-6 bg-gray-800 rounded-lg shadow-lg">
+          <div className="flex items-center justify-center mb-6">
+            <span className="bg-green-500 text-white px-3 py-1 rounded-full text-sm">
+              Verified by World
+            </span>
           </div>
-          <div className="bg-gray-700 p-4 rounded-md text-center">
-            <p className="text-sm text-gray-400">Videos Watched</p>
-            <p className="text-2xl font-bold">{metrics.videosWatched}</p>
+
+          {/* Apply GSAP animation to these metrics */}
+          <div ref={metricsRef} className="mb-6 grid grid-cols-2 gap-4">
+            <div className="bg-gray-700 p-4 rounded-md text-center">
+              <p className="text-sm text-gray-400">Total Earnings</p>
+              <p className="text-2xl font-bold">{totalEarnings.toFixed(2)} WLD</p>
+            </div>
+            <div className="bg-gray-700 p-4 rounded-md text-center">
+              <p className="text-sm text-gray-400">Videos Watched</p>
+              <p className="text-2xl font-bold">{metrics.videosWatched}</p>
+            </div>
+            <div className="bg-gray-700 p-4 rounded-md text-center">
+              <p className="text-sm text-gray-400">Rewards Claimed</p>
+              <p className="text-2xl font-bold">{metrics.rewardsClaimed}</p>
+            </div>
+            {role === "company" ? (
+              <div className="bg-gray-700 p-4 rounded-md text-center">
+                <p className="text-sm text-gray-400">Videos Uploaded</p>
+                <p className="text-2xl font-bold">{metrics.videosUploaded}</p>
+              </div>
+            ) : (
+              <div className="bg-gray-700 p-4 rounded-md text-center">
+                <p className="text-sm text-gray-400">Average per Video</p>
+                <p className="text-2xl font-bold">
+                  {metrics.videosWatched > 0
+                    ? (totalEarnings / metrics.videosWatched).toFixed(2)
+                    : 0}{" "}
+                  WLD
+                </p>
+              </div>
+            )}
           </div>
-          <div className="bg-gray-700 p-4 rounded-md text-center">
-            <p className="text-sm text-gray-400">Rewards Claimed</p>
-            <p className="text-2xl font-bold">{metrics.rewardsClaimed}</p>
+
+          <div className="mb-6">
+            <Line data={chartData} options={chartOptions} />
           </div>
-          <div className="bg-gray-700 p-4 rounded-md text-center">
-            <p className="text-sm text-gray-400">Average per Video</p>
-            <p className="text-2xl font-bold">
-              {metrics.videosWatched > 0
-                ? (totalEarnings / metrics.videosWatched).toFixed(2)
-                : 0}{" "}
-              WID
-            </p>
+
+          <div className="text-center">
+            <h2 className="text-xl font-semibold mb-2">Claimed Rewards</h2>
+            <ul className="space-y-3">
+              {actions.map((action: any, index: number) => (
+                <li key={index} className="p-3 bg-gray-700 rounded-md flex justify-between">
+                  <span>Video {action.signal}</span>
+                  <span>{action.reward.toFixed(2)} WLD</span>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
 
-        <div className="mb-6">
-          <Line data={chartData} options={chartOptions} />
-        </div>
-
-        <div className="text-center">
-          <h2 className="text-xl font-semibold mb-2">Claimed Rewards</h2>
-          <ul className="space-y-3">
-            {actions.map((action: any, index: number) => (
-              <li
-                key={index}
-                className="p-3 bg-gray-700 rounded-md flex justify-between"
-              >
-                <span>Video {action.signal}</span>
-                <span>{action.reward.toFixed(2)} WID</span>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <BottomNav />
       </div>
-
-      <BottomNav />
-    </div>
-  );
-}
+    );
+  }

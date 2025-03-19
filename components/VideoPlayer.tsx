@@ -40,6 +40,7 @@ export default function VideoPlayer({ src, onEnded }: VideoPlayerProps) {
   );
 }
 */
+// components/VideoPlayer.tsx
 import { useRef, useEffect, useState } from "react";
 import { useInView } from "react-intersection-observer";
 
