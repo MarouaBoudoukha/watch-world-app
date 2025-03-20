@@ -1,80 +1,10 @@
 // pages/profile.tsx
-/*
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Cookies from "js-cookie";
 import BottomNav from "../components/BottomNav";
-
-export default function Profile() {
-  const router = useRouter();
-  const userId = Cookies.get("userId");
-  const [actions, setActions] = useState([]);
-  const [totalEarnings, setTotalEarnings] = useState(0);
-
-  useEffect(() => {
-    if (!userId) {
-      router.push("/signin");
-    } else {
-      fetch("/api/get-user-actions")
-        .then((res) => res.json())
-        .then((data) => {
-          setActions(data);
-          const total = data.reduce(
-            (sum: number, action: any) => sum + (action.reward || 0.1),
-            0
-          );
-          setTotalEarnings(total);
-        });
-    }
-  }, [userId, router]);
-
-  if (!userId) return <div>Redirecting to sign in...</div>;
-
-  return (
-    <div className="bg-gray-900 text-white min-h-screen pb-20">
-      <header className="fixed top-0 left-0 right-0 z-10 p-4 bg-black bg-opacity-90 text-center">
-        <h1 className="text-2xl font-bold">Profile</h1>
-      </header>
-
-      <div className="mt-16 max-w-xl mx-auto p-4">
-        <p className="mb-4">
-          <span className="font-semibold">User ID:</span> {userId}
-        </p>
-        <h2 className="text-xl font-semibold mb-2">Claimed Rewards</h2>
-        <ul className="mb-4">
-          {actions.map((action: any, index: number) => (
-            <li key={index} className="mb-2">
-              Video {action.signal}: {action.reward || 0.1} WID
-            </li>
-          ))}
-        </ul>
-        <p className="font-semibold">
-          Total Earnings: {totalEarnings.toFixed(1)} WID
-        </p>
-        <button
-          onClick={() => router.push("/")}
-          className="mt-4 px-4 py-2 bg-blue-500 rounded hover:bg-blue-600 transition"
-        >
-          Back to Feed
-        </button>
-      </div>
-
-      <BottomNav />
-    </div>
-  );
-}
-*/
-
-// pages/profile.tsx
-
-import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/router";
-import Cookies from "js-cookie";
-import BottomNav from "../components/BottomNav";
+import { FaCheckCircle, FaUpload, FaChartLine, FaCoins } from "react-icons/fa";
 import { Line } from "react-chartjs-2";
-import { useUser } from "../components/UserContext";
-import gsap from "gsap";
-
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -97,151 +27,189 @@ ChartJS.register(
 );
 
 export default function Profile() {
-  const metricsRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (metricsRef.current) {
-      gsap.from(metricsRef.current.children, {
-        opacity: 0,
-        y: 20,
-        stagger: 0.2,
-        duration: 0.5,
-      });
-    }
-  }, []);
   const router = useRouter();
-  const { role } = useUser();
-  const userId = Cookies.get("userId");
-  const [actions, setActions] = useState<any[]>([]);
-  const [totalEarnings, setTotalEarnings] = useState(0);
-  const [metrics, setMetrics] = useState({
-    videosWatched: 0,
-    rewardsClaimed: 0,
-    videosUploaded: 0,
-  });
+  const [userInfo, setUserInfo] = useState<any>(null);
+  const [videos, setVideos] = useState<any[]>([]);
+  const [earnings, setEarnings] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    const userId = Cookies.get("userId");
     if (!userId) {
       router.push("/signin");
-    } else {
-      fetch("/api/get-user-actions")
-        .then((res) => res.json())
-        .then((data) => {
-          setActions(data);
-          const total = data.reduce((sum: number, action: any) => sum + (action.reward || 0), 0);
-          setTotalEarnings(total);
-          setMetrics((prev) => ({
-            ...prev,
-            videosWatched: data.length,
-            rewardsClaimed: data.filter((a: { reward: number; }) => a.reward > 0).length,
-          }));
-        });
-      if (role === "company") {
-        fetch("/api/get-company-metrics")
-          .then((res) => res.json())
-          .then((data) => setMetrics((prev) => ({ ...prev, videosUploaded: data.videoCount })));
-      }
+      return;
     }
-  }, [userId, router, role]);
 
-  // Dummy data for graph: earnings over time (or per video)
-  // For demo purposes, we use the index as the time axis.
+    // Fetch user info
+    fetch("/api/get-user-info", { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => {
+        setUserInfo(data);
+        setIsLoading(false);
+      });
+
+    // Fetch videos if company profile
+    if (userInfo?.role === "company") {
+      fetch("/api/get-company-videos", { credentials: "include" })
+        .then((res) => res.json())
+        .then((data) => setVideos(data.videos));
+    }
+
+    // Fetch earnings if user profile
+    if (userInfo?.role === "user") {
+      fetch("/api/get-earnings", { credentials: "include" })
+        .then((res) => res.json())
+        .then((data) => setEarnings(data.earnings));
+    }
+  }, [router, userInfo?.role]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        Loading...
+      </div>
+    );
+  }
+
+  if (!userInfo) {
+    return null;
+  }
+
+  const isCompany = userInfo.role === "company";
+
   const chartData = {
-    labels: actions.map((_, index) => `Video ${index + 1}`),
+    labels: earnings?.map((earning) => new Date(earning.created_at).toLocaleDateString()) || [],
     datasets: [
       {
-        label: "Earnings per Video (WID)",
-        data: actions.map((action) => action.reward || 0),
-        borderColor: "rgba(75,192,192,1)",
-        backgroundColor: "rgba(75,192,192,0.2)",
-        tension: 0.4,
+        label: "Earnings (WLD)",
+        data: earnings?.map((earning) => earning.reward) || [],
+        borderColor: "rgb(59, 130, 246)",
+        tension: 0.1,
       },
     ],
   };
 
-  const chartOptions = {
-    responsive: true,
-    plugins: {
-      legend: {
-        position: "top" as const,
-      },
-      title: {
-        display: true,
-        text: "Earnings per Video",
-      },
-    },
-  };
-
-  if (!userId)
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center text-white">
-        Redirecting to sign in...
-      </div>
-    );
-
   return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white relative pb-16">
-        <header className="py-6 text-center border-b border-gray-700">
-          <h1 className="text-3xl font-bold">Your Profile</h1>
-        </header>
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white pb-16">
+      <header className="py-6 text-center border-b border-gray-700">
+        <h1 className="text-3xl font-bold">Your Profile</h1>
+      </header>
 
-        <div className="max-w-2xl mx-auto p-6 mt-6 bg-gray-800 rounded-lg shadow-lg">
-          <div className="flex items-center justify-center mb-6">
-            <span className="bg-green-500 text-white px-3 py-1 rounded-full text-sm">
-              Verified by World
-            </span>
-          </div>
-
-          {/* Apply GSAP animation to these metrics */}
-          <div ref={metricsRef} className="mb-6 grid grid-cols-2 gap-4">
-            <div className="bg-gray-700 p-4 rounded-md text-center">
-              <p className="text-sm text-gray-400">Total Earnings</p>
-              <p className="text-2xl font-bold">{totalEarnings.toFixed(2)} WLD</p>
+      <div className="max-w-2xl mx-auto p-6 mt-6">
+        {/* Profile Header */}
+        <div className="flex items-center justify-center mb-6">
+          <img
+            src={isCompany ? userInfo.logoUrl : userInfo.profilePictureUrl}
+            alt={isCompany ? "Company Logo" : "Profile"}
+            className="w-24 h-24 rounded-full border-2 border-blue-500"
+          />
+          <div className="ml-4">
+            <div className="flex items-center">
+              <h2 className="text-2xl font-bold">
+                {isCompany ? userInfo.companyName : userInfo.username}
+              </h2>
+              <FaCheckCircle className="text-blue-500 ml-2" />
             </div>
-            <div className="bg-gray-700 p-4 rounded-md text-center">
-              <p className="text-sm text-gray-400">Videos Watched</p>
-              <p className="text-2xl font-bold">{metrics.videosWatched}</p>
-            </div>
-            <div className="bg-gray-700 p-4 rounded-md text-center">
-              <p className="text-sm text-gray-400">Rewards Claimed</p>
-              <p className="text-2xl font-bold">{metrics.rewardsClaimed}</p>
-            </div>
-            {role === "company" ? (
-              <div className="bg-gray-700 p-4 rounded-md text-center">
-                <p className="text-sm text-gray-400">Videos Uploaded</p>
-                <p className="text-2xl font-bold">{metrics.videosUploaded}</p>
-              </div>
-            ) : (
-              <div className="bg-gray-700 p-4 rounded-md text-center">
-                <p className="text-sm text-gray-400">Average per Video</p>
-                <p className="text-2xl font-bold">
-                  {metrics.videosWatched > 0
-                    ? (totalEarnings / metrics.videosWatched).toFixed(2)
-                    : 0}{" "}
-                  WLD
-                </p>
-              </div>
-            )}
-          </div>
-
-          <div className="mb-6">
-            <Line data={chartData} options={chartOptions} />
-          </div>
-
-          <div className="text-center">
-            <h2 className="text-xl font-semibold mb-2">Claimed Rewards</h2>
-            <ul className="space-y-3">
-              {actions.map((action: any, index: number) => (
-                <li key={index} className="p-3 bg-gray-700 rounded-md flex justify-between">
-                  <span>Video {action.signal}</span>
-                  <span>{action.reward.toFixed(2)} WLD</span>
-                </li>
-              ))}
-            </ul>
+            <p className="text-sm text-gray-400">
+              {isCompany ? "Verified Company" : "Verified by World"}
+            </p>
           </div>
         </div>
 
-        <BottomNav />
+        {/* Stats Section */}
+        <div className="grid grid-cols-2 gap-4 mb-8">
+          {isCompany ? (
+            <>
+              <div className="bg-gray-800 p-4 rounded-lg text-center">
+                <FaChartLine className="text-blue-500 text-2xl mx-auto mb-2" />
+                <p className="text-sm text-gray-400">Total Views</p>
+                <p className="text-xl font-bold">{userInfo.totalViews || 0}</p>
+              </div>
+              <div className="bg-gray-800 p-4 rounded-lg text-center">
+                <FaCoins className="text-yellow-500 text-2xl mx-auto mb-2" />
+                <p className="text-sm text-gray-400">Budget</p>
+                <p className="text-xl font-bold">{userInfo.budget} WLD</p>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="bg-gray-800 p-4 rounded-lg text-center">
+                <FaCoins className="text-yellow-500 text-2xl mx-auto mb-2" />
+                <p className="text-sm text-gray-400">Total Earnings</p>
+                <p className="text-xl font-bold">{userInfo.totalEarnings} WLD</p>
+              </div>
+              <div className="bg-gray-800 p-4 rounded-lg text-center">
+                <FaChartLine className="text-blue-500 text-2xl mx-auto mb-2" />
+                <p className="text-sm text-gray-400">Videos Watched</p>
+                <p className="text-xl font-bold">{userInfo.videosWatched || 0}</p>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Content Section */}
+        <div className="space-y-6">
+          {isCompany ? (
+            <>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold">Your Videos</h3>
+                <button
+                  onClick={() => router.push("/upload")}
+                  className="flex items-center bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg"
+                >
+                  <FaUpload className="mr-2" />
+                  Upload Video
+                </button>
+              </div>
+              <div className="space-y-4">
+                {videos.map((video) => (
+                  <div
+                    key={video.id}
+                    className="bg-gray-800 rounded-lg overflow-hidden"
+                  >
+                    <video
+                      src={video.url}
+                      className="w-full h-48 object-cover"
+                      controls
+                    />
+                    <div className="p-4">
+                      <h4 className="font-bold">{video.title}</h4>
+                      <p className="text-sm text-gray-400">{video.description}</p>
+                      <div className="mt-2 flex justify-between items-center">
+                        <span className="text-sm text-gray-400">
+                          {video.views} views
+                        </span>
+                        <span className="text-sm text-blue-400">
+                          {video.reward} WLD reward
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <>
+              <h3 className="text-xl font-bold mb-4">Earnings History</h3>
+              <div className="bg-gray-800 p-4 rounded-lg">
+                <Line
+                  data={chartData}
+                  options={{
+                    responsive: true,
+                    plugins: {
+                      legend: {
+                        position: "top" as const,
+                      },
+                    },
+                  }}
+                />
+              </div>
+            </>
+          )}
+        </div>
       </div>
-    );
-  }
+
+      <BottomNav />
+    </div>
+  );
+}

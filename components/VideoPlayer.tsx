@@ -40,19 +40,31 @@ export default function VideoPlayer({ src, onEnded }: VideoPlayerProps) {
   );
 }
 */
+
 // components/VideoPlayer.tsx
 import { useRef, useEffect, useState } from "react";
 import { useInView } from "react-intersection-observer";
+import { motion } from "framer-motion";
+import { toast } from "react-hot-toast";
+import { Button } from "@/components/ui/button";
+import { FaCoins, FaVolumeMute, FaVolumeUp  } from "react-icons/fa";
 
 interface VideoPlayerProps {
   src: string;
   onEnded: () => void;
+  onClaimReward: () => void;
 }
 
-export default function VideoPlayer({ src, onEnded }: VideoPlayerProps) {
+export default function VideoPlayer({ src, onEnded, onClaimReward }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const { ref, inView } = useInView({ threshold: 0.5 });
-  const [isMuted, setIsMuted] = useState(true);
+  const { ref: inViewRef, inView } = useInView({ threshold: 0.5 });
+  const [isMuted, setIsMuted] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
+
+  // Combine the inView ref with the video element's ref
+  const setRefs = (node: HTMLDivElement) => {
+    inViewRef(node);
+  };
 
   // Update the video element's muted property whenever isMuted changes.
   useEffect(() => {
@@ -75,6 +87,18 @@ export default function VideoPlayer({ src, onEnded }: VideoPlayerProps) {
     }
   }, [inView]);
 
+  const handleEnded = () => {
+    setIsCompleted(true);
+    onEnded();
+  };
+
+  const handleClaim = () => {
+    onClaimReward();
+    toast.success("Reward claimed successfully!", {
+      style: { background: "#1a1a1a", color: "#fff" },
+    });
+  };
+
   // Toggle mute state and re-trigger play if unmuting.
   const toggleMute = () => {
     setIsMuted((prevMuted) => {
@@ -89,21 +113,38 @@ export default function VideoPlayer({ src, onEnded }: VideoPlayerProps) {
   };
 
   return (
-    <div ref={ref} className="relative h-screen w-full">
+    <div ref={setRefs} className="relative h-screen w-full">
       <video
         ref={videoRef}
         src={src}
-        onEnded={onEnded}
+        onEnded={handleEnded}
         controls={false}
-        className="w-full h-full object-cover"
+        autoPlay
         playsInline
+        className="w-full h-full object-cover"
       />
       <button
         onClick={toggleMute}
-        className="absolute bottom-4 right-4 bg-black bg-opacity-50 text-white px-3 py-1 rounded"
+        className="absolute bottom-6 right-6 flex items-center justify-center bg-gray-800 bg-opacity-75 rounded-full p-3 shadow-lg transition-transform hover:scale-105"
       >
-        {isMuted ? "Unmute" : "Mute"}
+        {isMuted ? <FaVolumeMute className="h-6 w-6 text-white" /> : <FaVolumeUp className="h-6 w-6 text-white" />}
       </button>
+      {isCompleted && (
+        <motion.div
+          className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-20"
+          initial={{ y: 100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Button
+            onClick={handleClaim}
+            className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white py-3 px-8 rounded-full text-lg shadow-lg flex items-center space-x-2"
+          >
+            <FaCoins />
+            <span>Claim Reward</span>
+          </Button>
+        </motion.div>
+      )}
     </div>
   );
 }

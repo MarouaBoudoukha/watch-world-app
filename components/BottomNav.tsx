@@ -36,18 +36,19 @@ import { useUser } from "./UserContext";
 
 export default function BottomNav() {
   const { role } = useUser();
+
   return (
-    <nav className="absolute bottom-0 left-0 right-0 flex justify-around items-center py-4 bg-transparent z-30">
+    <nav className="fixed bottom-0 left-0 right-0 flex justify-around items-center py-4 bg-gradient-to-t from-black to-transparent z-30">
       <Link href="/">
-        <FaHome className="text-white text-2xl" />
+        <FaHome className="text-white text-2xl hover:text-blue-500" />
       </Link>
-      {role === 'company' && (
+      {role === "company" && (
         <Link href="/upload">
-          <FaPlus className="text-white text-2xl" />
+          <FaPlus className="text-white text-3xl hover:text-pink-500" />
         </Link>
       )}
       <Link href="/profile">
-        <FaUserAlt className="text-white text-2xl" />
+        <FaUserAlt className="text-white text-2xl hover:text-blue-500" />
       </Link>
     </nav>
   );
